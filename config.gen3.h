@@ -341,6 +341,15 @@ DEFINE_TEMP_SENSOR(noheater,	TT_INTERCOM,		0)
 // #define	BANG_BANG_OFF	45
 
 /*
+	ALWAYS_POLL_ENDSTOPS
+		check endstops every time we step, instead of only during homing
+	ENDSTOP_DEBOUNCE_THRESHOLD
+		how many consecutive times an endstop must see a flag before we believe it
+*/
+// #define	ALWAYS_POLL_ENDSTOPS
+// #define	ENDSTOP_DEBOUNCE_THRESHOLD 5
+
+/*
 	move buffer size, in number of moves
 		note that each move takes a fair chunk of ram (69 bytes as of this writing) so don't make the buffer too big - a bigger serial readbuffer may help more than increasing this unless your gcodes are more than 70 characters long on average.
 		however, a larger movebuffer will probably help with lots of short consecutive moves, as each move takes a bunch of math (hence time) to set up so a longer buffer allows more of the math to be done during preceding longer moves
