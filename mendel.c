@@ -28,9 +28,13 @@ void io_init(void) {
 		PRR = MASK(PRTWI) | MASK(PRADC) | MASK(PRSPI);
 	#elif defined PRR0
 		PRR0 = MASK(PRTWI) | MASK(PRADC) | MASK(PRSPI);
-		#ifdef PRR1
+		#if defined(PRUSART3) 
 			// don't use USART2 or USART3- leave USART1 for GEN3 and derivatives
-			PRR1 = MASK(PRUSART3) | MASK(PRUSART2);
+			PRR1 |= MASK(PRUSART3) | MASK(PRUSART2);
+		#endif
+		#if defined(PRUSART2) 
+			// don't use USART2 or USART3- leave USART1 for GEN3 and derivatives
+			PRR1 |= MASK(PRUSART2);
 		#endif
 	#endif
 	ACSR = MASK(ACD);
@@ -39,10 +43,20 @@ void io_init(void) {
 	WRITE(X_STEP_PIN, 0);	SET_OUTPUT(X_STEP_PIN);
 	WRITE(X_DIR_PIN,  0);	SET_OUTPUT(X_DIR_PIN);
 	#ifdef X_MIN_PIN
-		WRITE(X_MIN_PIN,  1);	SET_INPUT(X_MIN_PIN);
+		SET_INPUT(X_MIN_PIN);
+		#ifdef USE_INTERNAL_PULLUPS
+			WRITE(X_MIN_PIN, 1);
+		#else
+			WRITE(X_MIN_PIN, 0);
+		#endif
 	#endif
 	#ifdef X_MAX_PIN
-		WRITE(X_MAX_PIN, 1); SET_INPUT(X_MAX_PIN);
+		SET_INPUT(X_MAX_PIN);
+		#ifdef USE_INTERNAL_PULLUPS
+			WRITE(X_MAX_PIN, 1);
+		#else
+			WRITE(X_MAX_PIN, 0);
+		#endif
 	#endif
 	#ifdef X_ENABLE_PIN
 		WRITE(X_ENABLE_PIN, 1); SET_OUTPUT(X_ENABLE_PIN);
@@ -51,29 +65,53 @@ void io_init(void) {
 	WRITE(Y_STEP_PIN, 0);	SET_OUTPUT(Y_STEP_PIN);
 	WRITE(Y_DIR_PIN,  0);	SET_OUTPUT(Y_DIR_PIN);
 	#ifdef Y_MIN_PIN
-		WRITE(Y_MIN_PIN,  1);	SET_INPUT(Y_MIN_PIN);
+		SET_INPUT(Y_MIN_PIN);
+		#ifdef USE_INTERNAL_PULLUPS
+			WRITE(Y_MIN_PIN, 1);
+		#else
+			WRITE(Y_MIN_PIN, 0);
+		#endif
 	#endif
 	#ifdef Y_MAX_PIN
-		WRITE(Y_MAX_PIN, 1); SET_INPUT(Y_MAX_PIN);
+		SET_INPUT(Y_MAX_PIN);
+		#ifdef USE_INTERNAL_PULLUPS
+			WRITE(Y_MAX_PIN, 1);
+		#else
+			WRITE(Y_MAX_PIN, 0);
+		#endif
 	#endif
 	#ifdef Y_ENABLE_PIN
 		WRITE(Y_ENABLE_PIN, 1); SET_OUTPUT(Y_ENABLE_PIN);
 	#endif
 	
-	WRITE(Z_STEP_PIN, 0);	SET_OUTPUT(Z_STEP_PIN);
-	WRITE(Z_DIR_PIN,  0);	SET_OUTPUT(Z_DIR_PIN);
+	#if defined Z_STEP_PIN && defined Z_DIR_PIN
+		WRITE(Z_STEP_PIN, 0);	SET_OUTPUT(Z_STEP_PIN);
+		WRITE(Z_DIR_PIN,  0);	SET_OUTPUT(Z_DIR_PIN);
+	#endif
 	#ifdef Z_MIN_PIN
-		WRITE(Z_MIN_PIN,  1);	SET_INPUT(Z_MIN_PIN);
+		SET_INPUT(Z_MIN_PIN);
+		#ifdef USE_INTERNAL_PULLUPS
+			WRITE(Z_MIN_PIN, 1);
+		#else
+			WRITE(Z_MIN_PIN, 0);
+		#endif
 	#endif
 	#ifdef Z_MAX_PIN
-		WRITE(Z_MAX_PIN, 1); SET_INPUT(Z_MAX_PIN);
+		SET_INPUT(Z_MAX_PIN);
+		#ifdef USE_INTERNAL_PULLUPS
+			WRITE(Z_MAX_PIN, 1);
+		#else
+			WRITE(Z_MAX_PIN, 0);
+		#endif
 	#endif
 	#ifdef Z_ENABLE_PIN
 		WRITE(Z_ENABLE_PIN, 1); SET_OUTPUT(Z_ENABLE_PIN);
 	#endif
 	
-	WRITE(E_STEP_PIN, 0);	SET_OUTPUT(E_STEP_PIN);
-	WRITE(E_DIR_PIN,  0);	SET_OUTPUT(E_DIR_PIN);
+	#if defined E_STEP_PIN && defined E_DIR_PIN
+		WRITE(E_STEP_PIN, 0);	SET_OUTPUT(E_STEP_PIN);
+		WRITE(E_DIR_PIN,  0);	SET_OUTPUT(E_DIR_PIN);
+	#endif
 	#ifdef E_ENABLE_PIN
 		WRITE(E_ENABLE_PIN, 1); SET_OUTPUT(E_ENABLE_PIN);
 	#endif
@@ -119,12 +157,14 @@ void io_init(void) {
 		power_off();
 	#endif
 
-	// setup SPI
-	WRITE(SCK, 0);				SET_OUTPUT(SCK);
-	WRITE(MOSI, 1);				SET_OUTPUT(MOSI);
-	WRITE(MISO, 1);				SET_INPUT(MISO);
-	WRITE(SS, 1);					SET_OUTPUT(SS);
-
+	#ifdef	TEMP_MAX6675
+		// setup SPI
+		WRITE(SCK, 0);				SET_OUTPUT(SCK);
+		WRITE(MOSI, 1);				SET_OUTPUT(MOSI);
+		WRITE(MISO, 1);				SET_INPUT(MISO);
+		WRITE(SS, 1);					SET_OUTPUT(SS);
+	#endif
+	
 	#ifdef TEMP_INTERCOM
 		// Enable the RS485 transceiver
 		SET_OUTPUT(RX_ENABLE_PIN);
@@ -167,7 +207,7 @@ void init(void) {
 	wd_reset();
 
 	// say hi to host
-	serial_writestr_P(PSTR("Start\nok\n"));
+	serial_writestr_P(PSTR("start\nok\n"));
 
 }
 

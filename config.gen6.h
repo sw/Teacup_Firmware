@@ -1,5 +1,4 @@
-#ifndef	_CONFIG_H
-#define	_CONFIG_H
+/* Notice to developers: this file is intentionally included twice. */
 
 /*
   Sample configuration file for the GEN6-Board sold by Camiel Gubbels.
@@ -163,27 +162,49 @@ undefine if you don't want to use them
 #include	"arduino.h"
 
 /*
+	internal pullup resistors
+		the ATmega has internal pullup resistors on it's input pins which are counterproductive with the commonly used eletronic endstops, so they should be switched off. For other endstops, like mechanical ones, you may want to uncomment this.
+*/
+//#define USE_INTERNAL_PULLUPS
+
+/*
 	this is the official GEN6 reprap motherboard pinout
 */
 
 #define	X_STEP_PIN						DIO15
 #define	X_DIR_PIN							DIO18
 #define	X_MIN_PIN							DIO20
+//#define	X_MAX_PIN							xxxx
 #define	X_ENABLE_PIN					DIO19
+//#define	X_INVERT_DIR
+//#define	X_INVERT_MIN
+//#define	X_INVERT_MAX
+//#define	X_INVERT_ENABLE
 
 #define	Y_STEP_PIN						DIO23
 #define	Y_DIR_PIN							DIO22
 #define	Y_MIN_PIN							DIO25
+//#define	Y_MAX_PIN							xxxx
 #define	Y_ENABLE_PIN					DIO24
+//#define	Y_INVERT_DIR
+//#define	Y_INVERT_MIN
+//#define	Y_INVERT_MAX
+//#define	Y_INVERT_ENABLE
 
 #define	Z_STEP_PIN						DIO27
 #define	Z_DIR_PIN							DIO28
 #define	Z_MIN_PIN							DIO30
+//#define	Z_MAX_PIN							xxxx
 #define	Z_ENABLE_PIN					DIO29
+//#define	Z_INVERT_DIR
+//#define	Z_INVERT_MIN
+//#define	Z_INVERT_MAX
+//#define	Z_INVERT_ENABLE
 
 #define	E_STEP_PIN						DIO4
 #define	E_DIR_PIN							DIO2
 #define E_ENABLE_PIN					DIO3
+//#define	E_INVERT_DIR
 
 
 /***************************************************************************\
@@ -338,7 +359,7 @@ DEFINE_HEATER(extruder,   PORTD, PIND6, OCR2B)
 
 /*
 	DC extruder
-		If you have a DC motor extruder, configure it as a "heater" above and define this value as the index or name
+		If you have a DC motor extruder, configure it as a "heater" above and define this value as the index or name. You probably also want to comment out E_STEP_PIN and E_DIR_PIN in the Pinouts section above
 */
 // #define	DC_EXTRUDER HEATER_motor
 // #define	DC_EXTRUDER_PWM	180
@@ -411,5 +432,3 @@ DEFINE_HEATER(extruder,   PORTD, PIND6, OCR2B)
 * OCR5CL - PL5 - DIO44                                                      *
 *                                                                           *
 \***************************************************************************/
-
-#endif /* _CONFIG_H */

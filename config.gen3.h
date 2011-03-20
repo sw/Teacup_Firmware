@@ -1,5 +1,4 @@
-#ifndef	_CONFIG_H
-#define	_CONFIG_H
+/* Notice to developers: this file is intentionally included twice. */
 
 /*
 	CONTENTS
@@ -160,6 +159,12 @@ undefine if you don't want to use them
 #include	"arduino.h"
 
 /*
+	internal pullup resistors
+		the ATmega has internal pullup resistors on it's input pins which are counterproductive with the commonly used eletronic endstops, so they should be switched off. For other endstops, like mechanical ones, you may want to uncomment this.
+*/
+//#define USE_INTERNAL_PULLUPS
+
+/*
 	this is the official gen3 reprap motherboard pinout
 */
 #define TX_ENABLE_PIN					DIO12
@@ -170,21 +175,35 @@ undefine if you don't want to use them
 #define	X_MIN_PIN							DIO20
 #define	X_MAX_PIN							DIO21
 #define	X_ENABLE_PIN					DIO19
+//#define	X_INVERT_DIR
+//#define	X_INVERT_MIN
+//#define	X_INVERT_MAX
+//#define	X_INVERT_ENABLE
 
 #define	Y_STEP_PIN						DIO23
 #define	Y_DIR_PIN							DIO22
 #define	Y_MIN_PIN							AIO6
 #define	Y_MAX_PIN							AIO5
 #define	Y_ENABLE_PIN					DIO7
+//#define	Y_INVERT_DIR
+//#define	Y_INVERT_MIN
+//#define	Y_INVERT_MAX
+//#define	Y_INVERT_ENABLE
 
 #define	Z_STEP_PIN						AIO4
 #define	Z_DIR_PIN							AIO3
 #define	Z_MIN_PIN							AIO1
 #define	Z_MAX_PIN							AIO0
 #define	Z_ENABLE_PIN					AIO2
+//#define	Z_INVERT_DIR
+//#define	Z_INVERT_MIN
+//#define	Z_INVERT_MAX
+//#define	Z_INVERT_ENABLE
 
 #define	E_STEP_PIN						DIO16
 #define	E_DIR_PIN							DIO17
+//#define E_ENABLE_PIN					xxxx
+//#define	E_INVERT_DIR
 
 #define	SD_CARD_DETECT				DIO2
 #define	SD_WRITE_PROTECT			DIO3
@@ -349,7 +368,7 @@ DEFINE_TEMP_SENSOR(noheater,	TT_INTERCOM,		0)
 
 /*
 	DC extruder
-		If you have a DC motor extruder, configure it as a "heater" above and define this value as the index or name
+		If you have a DC motor extruder, configure it as a "heater" above and define this value as the index or name. You probably also want to comment out E_STEP_PIN and E_DIR_PIN in the Pinouts section above
 */
 // #define	DC_EXTRUDER HEATER_motor
 // #define	DC_EXTRUDER_PWM	180
@@ -422,5 +441,3 @@ DEFINE_TEMP_SENSOR(noheater,	TT_INTERCOM,		0)
 * OCR5CL - PL5 - DIO44                                                      *
 *                                                                           *
 \***************************************************************************/
-
-#endif /* _CONFIG_H */

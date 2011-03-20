@@ -9,6 +9,7 @@
 #define	disable_heater()	heater_set(0, 0)
 
 #undef DEFINE_HEATER
+#undef _CONFIG_H
 #define DEFINE_HEATER(name, port, pin, pwm) HEATER_ ## name,
 typedef enum
 {
@@ -30,5 +31,7 @@ void pid_set_p(heater_t index, int32_t p);
 void pid_set_i(heater_t index, int32_t i);
 void pid_set_d(heater_t index, int32_t d);
 void pid_set_i_limit(heater_t index, int32_t i_limit);
+
+void heater_print(uint16_t i);
 
 #endif	/* _HEATER_H */

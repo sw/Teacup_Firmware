@@ -74,28 +74,28 @@ extern const uint32_t powers[];  // defined in sermsg.c
 const int32_t rounding[DECFLOAT_EXP_MAX] = {0,  5,  50,  500};
 
 static int32_t decfloat_to_int(decfloat *df, uint32_t multiplicand, uint32_t denominator) {
-	int32_t	r = df->mantissa;
+	uint32_t	r = df->mantissa;
 	uint8_t	e = df->exponent;
 
 	// e=1 means we've seen a decimal point but no digits after it, and e=2 means we've seen a decimal point with one digit so it's too high by one if not zero
 	if (e)
 		e--;
 
-	int32_t	rnew1 = r * (multiplicand / denominator);
+	uint32_t	rnew1 = r * (multiplicand / denominator);
 	if (e)
 	{
-		int32_t	rnew2 = r * (multiplicand % denominator) / denominator;
+		uint32_t	rnew2 = r * (multiplicand % denominator) / denominator;
 		r = rnew1 + rnew2;
 
 		r = (r + rounding[e]) / powers[e];
 	}
 	else
 	{
-		int32_t	rnew2 = (r * (multiplicand % denominator) + (denominator / 2)) / denominator;
+		uint32_t	rnew2 = (r * (multiplicand % denominator) + (denominator / 2)) / denominator;
 		r = rnew1 + rnew2;
 	}
 
-	return df->sign ? -r : r;
+	return df->sign ? -(int32_t)r : (int32_t)r;
 }
 
 /****************************************************************************
@@ -291,16 +291,18 @@ void gcode_parse_char(uint8_t c) {
 
 			default:
 				// can't do ranges in switch..case, so process actual digits here.
-				if (c >= '0' && c <= '9' &&
-				    read_digit.exponent < DECFLOAT_EXP_MAX &&
-				    ((next_target.option_inches == 0 &&
-				      read_digit.mantissa < DECFLOAT_MANT_MM_MAX) ||
-				     (next_target.option_inches &&
-				      read_digit.mantissa < DECFLOAT_MANT_IN_MAX))){
-					// this is simply mantissa = (mantissa * 10) + atoi(c) in different clothes
-					read_digit.mantissa = (read_digit.mantissa << 3) + (read_digit.mantissa << 1) + (c - '0');
-					if (read_digit.exponent)
-						read_digit.exponent++;
+				if (c >= '0' && c <= '9') {
+					if (read_digit.exponent < DECFLOAT_EXP_MAX &&
+							((next_target.option_inches == 0 &&
+							read_digit.mantissa < DECFLOAT_MANT_MM_MAX) ||
+							(next_target.option_inches &&
+							read_digit.mantissa < DECFLOAT_MANT_IN_MAX)))
+					{
+						// this is simply mantissa = (mantissa * 10) + atoi(c) in different clothes
+						read_digit.mantissa = (read_digit.mantissa << 3) + (read_digit.mantissa << 1) + (c - '0');
+						if (read_digit.exponent)
+							read_digit.exponent++;
+					}
 				}
 				#ifdef	DEBUG
 				else {
@@ -324,7 +326,8 @@ void gcode_parse_char(uint8_t c) {
 
 		if (
 		#ifdef	REQUIRE_LINENUMBER
-			(next_target.N >= next_target.N_expected) && (next_target.seen_N == 1)
+			((next_target.N >= next_target.N_expected) && (next_target.seen_N == 1)) ||
+			(next_target.seen_M && (next_target.M == 110))
 		#else
 			1
 		#endif
@@ -362,8 +365,7 @@ void gcode_parse_char(uint8_t c) {
 			next_target.seen_M = next_target.seen_checksum = next_target.seen_semi_comment = \
 			next_target.seen_parens_comment = next_target.checksum_read = \
 			next_target.checksum_calculated = 0;
-		last_field = 0;
-		read_digit.sign = read_digit.mantissa = read_digit.exponent = 0;
+		// last_field and read_digit are reset above already
 
 		// assume a G1 by default
 		next_target.seen_G = 1;

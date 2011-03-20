@@ -1,5 +1,4 @@
-#ifndef	_CONFIG_H
-#define	_CONFIG_H
+/* Notice to developers: this file is intentionally included twice. */
 
 /*
 	CONTENTS
@@ -154,6 +153,12 @@ undefine if you don't want to use them
 #include	"arduino.h"
 
 /*
+	internal pullup resistors
+		the ATmega has internal pullup resistors on it's input pins which are counterproductive with the commonly used eletronic endstops, so they should be switched off. For other endstops, like mechanical ones, you may want to uncomment this.
+*/
+//#define USE_INTERNAL_PULLUPS
+
+/*
 	user defined pins
 	adjust to suit your electronics,
 	or adjust your electronics to suit this
@@ -162,17 +167,37 @@ undefine if you don't want to use them
 #define	X_STEP_PIN						AIO0
 #define	X_DIR_PIN							AIO1
 #define	X_MIN_PIN							AIO2
+//#define	X_MAX_PIN							xxxx
+//#define	X_ENABLE_PIN					xxxx
+//#define	X_INVERT_DIR
+//#define	X_INVERT_MIN
+//#define	X_INVERT_MAX
+//#define	X_INVERT_ENABLE
 
 #define	Y_STEP_PIN						AIO3
 #define	Y_DIR_PIN							AIO4
 #define	Y_MIN_PIN							AIO5
+//#define	Y_MAX_PIN							xxxx
+//#define	Y_ENABLE_PIN					xxxx
+//#define	Y_INVERT_DIR
+//#define	Y_INVERT_MIN
+//#define	Y_INVERT_MAX
+//#define	Y_INVERT_ENABLE
 
 #define	Z_STEP_PIN						DIO2
 #define	Z_DIR_PIN							DIO3
 #define	Z_MIN_PIN							DIO4
+//#define	Z_MAX_PIN							xxxx
+//#define	Z_ENABLE_PIN					xxxx
+//#define	Z_INVERT_DIR
+//#define	Z_INVERT_MIN
+//#define	Z_INVERT_MAX
+//#define	Z_INVERT_ENABLE
 
 #define	E_STEP_PIN						DIO7
 #define	E_DIR_PIN							DIO8
+//#define E_ENABLE_PIN					xxxx
+//#define	E_INVERT_DIR
 
 #define	PS_ON_PIN							DIO9
 
@@ -366,13 +391,13 @@ DEFINE_HEATER(bed,			PORTB, PINB4, OCR0B)
 
 /*
 	DC extruder
-		If you have a DC motor extruder, configure it as a "heater" above and define this value as the index or name
+		If you have a DC motor extruder, configure it as a "heater" above and define this value as the index or name. You probably also want to comment out E_STEP_PIN and E_DIR_PIN in the Pinouts section above
 */
 // #define	DC_EXTRUDER HEATER_motor
 // #define	DC_EXTRUDER_PWM	180
 
 /*
-	FiveD on Arduino implements a watchdog, which has to be reset every 250ms or it will reboot the controller. As rebooting (and letting the GCode sending application trying to continue the build with a then different Home point) is probably even worse than just hanging, and there is no better restore code in place, this is disabled for now.
+	Teacup implements a watchdog, which has to be reset every 250ms or it will reboot the controller. As rebooting (and letting the GCode sending application trying to continue the build with a then different Home point) is probably even worse than just hanging, and there is no better restore code in place, this is disabled for now.
 */
 // #define USE_WATCHDOG
 
@@ -439,5 +464,3 @@ DEFINE_HEATER(bed,			PORTB, PINB4, OCR0B)
 * OCR5CL - PL5 - DIO44                                                      *
 *                                                                           *
 \***************************************************************************/
-
-#endif /* _CONFIG_H */

@@ -26,37 +26,33 @@ uint8_t next_tool;
 
 
 /*
-public functions
+	private functions
+
+	this is where we construct a move without a gcode command, useful for gcodes which require multiple moves eg; homing
 */
 
-void zero_x(void) {
+static void zero_x(void) {
 	TARGET t = startpoint;
 	t.X = 0;
 	t.F = SEARCH_FEEDRATE_X;
 	enqueue(&t);
 }
 
-void zero_y(void) {
+static void zero_y(void) {
 	TARGET t = startpoint;
 	t.Y = 0;
 	t.F = SEARCH_FEEDRATE_Y;
 	enqueue(&t);
 }
 
-void zero_z(void) {
+static void zero_z(void) {
 	TARGET t = startpoint;
 	t.Z = 0;
 	t.F = SEARCH_FEEDRATE_Z;
 	enqueue(&t);
 }
 
-void zero_e(void) {
-	TARGET t = startpoint;
-	t.E = 0;
-	enqueue(&t);
-}
-
-void SpecialMoveE(int32_t e, uint32_t f) {
+static void SpecialMoveE(int32_t e, uint32_t f) {
 	TARGET t = startpoint;
 	t.E = e;
 	t.F = f;
@@ -87,27 +83,27 @@ void process_gcode_command() {
 	// implement axis limits
 	#ifdef	X_MIN
 		if (next_target.target.X < (X_MIN * STEPS_PER_MM_X))
-			next_target.target.X = X_MIN;
+			next_target.target.X = X_MIN * STEPS_PER_MM_X;
 	#endif
 	#ifdef	X_MAX
 		if (next_target.target.X > (X_MAX * STEPS_PER_MM_X))
-			next_target.target.X = X_MAX;
+			next_target.target.X = X_MAX * STEPS_PER_MM_X;
 	#endif
 	#ifdef	Y_MIN
 		if (next_target.target.Y < (Y_MIN * STEPS_PER_MM_Y))
-			next_target.target.Y = Y_MIN;
+			next_target.target.Y = Y_MIN * STEPS_PER_MM_Y;
 	#endif
 	#ifdef	Y_MAX
 		if (next_target.target.Y > (Y_MAX * STEPS_PER_MM_Y))
-			next_target.target.Y = Y_MAX;
+			next_target.target.Y = Y_MAX * STEPS_PER_MM_Y;
 	#endif
 	#ifdef	Z_MIN
 		if (next_target.target.Z < (Z_MIN * STEPS_PER_MM_Z))
-			next_target.target.Z = Z_MIN;
+			next_target.target.Z = Z_MIN * STEPS_PER_MM_Z;
 	#endif
 	#ifdef	Z_MAX
 		if (next_target.target.Z > (Z_MAX * STEPS_PER_MM_Z))
-			next_target.target.Z = Z_MAX;
+			next_target.target.Z = Z_MAX * STEPS_PER_MM_Z;
 	#endif
 
 
@@ -122,7 +118,7 @@ void process_gcode_command() {
 			// since it would be a major hassle to force the dda to not synchronise, just provide a fast feedrate and hope it's close enough to what host expects
 			case 0:
 				backup_f = next_target.target.F;
-				next_target.target.F = MAXIMUM_FEEDRATE_X * 2;
+				next_target.target.F = MAXIMUM_FEEDRATE_X * 2L;
 				enqueue(&next_target.target);
 				next_target.target.F = backup_f;
 				break;
@@ -182,16 +178,12 @@ void process_gcode_command() {
 					zero_z();
 					axisSelected = 1;
 				}
-				if (next_target.seen_E) {
-					zero_e();
-					axisSelected = 1;
-				}
+				// there's no point in moving E, as E is always relative
 				
 				if (!axisSelected) {
 					zero_x();
 					zero_y();
 					zero_z();
-					zero_e();
 				}
 				
 				break;
@@ -223,15 +215,12 @@ void process_gcode_command() {
 						startpoint.Z = current_position.Z = next_target.target.Z;
 						axisSelected = 1;
 					}
-					if (next_target.seen_E) {
-						startpoint.E = current_position.E = next_target.target.E;
-						axisSelected = 1;
-					}
+					// there's no point in setting E, as E is always relative
+
 					if (axisSelected == 0) {
-						startpoint.X = current_position.X =
-						startpoint.Y = current_position.Y =
-						startpoint.Z = current_position.Z =
-						startpoint.E = current_position.E = 0;
+						startpoint.X = current_position.X = next_target.target.X =
+						startpoint.Y = current_position.Y = next_target.target.Y =
+						startpoint.Z = current_position.Z = next_target.target.Z = 0;
 					}
 					break;
 
@@ -362,7 +351,7 @@ void process_gcode_command() {
 				
 			// M110- set line number
 			case 110:
-				next_target.N_expected = next_target.S - 1;
+				// this is a no-op in Teacup
 				break;
 			// M111- set debug level
 			#ifdef	DEBUG

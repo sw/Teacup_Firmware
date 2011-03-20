@@ -32,6 +32,7 @@ void home_x_negative() {
 		uint8_t	denoise_count = 0;
 
 		// home X
+		x_enable();
 		// hit home hard
 		x_direction(0);
 		while (denoise_count < 8) {
@@ -57,7 +58,7 @@ void home_x_negative() {
 			delay(5);
 			unstep();
 			// wait until next step time
-			delay((uint32_t) (60.0 * ((float) F_CPU) / STEPS_PER_MM_X / ((float) SEARCH_FEEDRATE_X)));
+			delay((uint32_t) (60.0 * 1000000.0 / STEPS_PER_MM_X / ((float) SEARCH_FEEDRATE_X)));
 		}
 
 		// set X home
@@ -70,6 +71,7 @@ void home_x_positive() {
 		uint8_t	denoise_count = 0;
 
 		// home X
+		x_enable();
 		// hit home hard
 		x_direction(1);
 		while (denoise_count < 8) {
@@ -83,7 +85,7 @@ void home_x_positive() {
 			delay(5);
 			unstep();
 			// wait until next step time
-			delay((uint32_t) (60.0 * ((float) F_CPU) / STEPS_PER_MM_X / ((float) MAXIMUM_FEEDRATE_X)));
+			delay((uint32_t) (60.0 * 1000000.0 / STEPS_PER_MM_X / ((float) MAXIMUM_FEEDRATE_X)));
 		}
 		denoise_count = 0;
 
@@ -113,6 +115,7 @@ void home_y_negative() {
 		uint8_t	denoise_count = 0;
 
 		// home Y
+		y_enable();
 		// hit home hard
 		y_direction(0);
 		while (denoise_count < 8) {
@@ -138,7 +141,7 @@ void home_y_negative() {
 			delay(5);
 			unstep();
 			// wait until next step time
-			delay((uint32_t) (60.0 * ((float) F_CPU) / STEPS_PER_MM_Y / ((float) SEARCH_FEEDRATE_Y)));
+			delay((uint32_t) (60.0 * 1000000.0 / STEPS_PER_MM_Y / ((float) SEARCH_FEEDRATE_Y)));
 		}
 
 		// set Y home
@@ -151,6 +154,7 @@ void home_y_positive() {
 		uint8_t	denoise_count = 0;
 
 		// home Y
+		y_enable();
 		// hit home hard
 		y_direction(1);
 		while (denoise_count < 8) {
@@ -164,7 +168,7 @@ void home_y_positive() {
 			delay(5);
 			unstep();
 			// wait until neyt step time
-			delay((uint32_t) (60.0 * ((float) F_CPU) / STEPS_PER_MM_Y / ((float) MAXIMUM_FEEDRATE_Y)));
+			delay((uint32_t) (60.0 * 1000000.0 / STEPS_PER_MM_Y / ((float) MAXIMUM_FEEDRATE_Y)));
 		}
 		denoise_count = 0;
 
@@ -194,6 +198,7 @@ void home_z_negative() {
 		uint8_t	denoise_count = 0;
 
 		// home Z
+		z_enable();
 		// hit home hard
 		z_direction(0);
 		while (denoise_count < 8) {
@@ -219,11 +224,12 @@ void home_z_negative() {
 			delay(5);
 			unstep();
 			// wait until next step time
-			delay((uint32_t) (60.0 * ((float) F_CPU) / STEPS_PER_MM_Z / ((float) SEARCH_FEEDRATE_Z)));
+			delay((uint32_t) (60.0 * 1000000.0 / STEPS_PER_MM_Z / ((float) SEARCH_FEEDRATE_Z)));
 		}
 
 		// set Z home
 		startpoint.Z = current_position.Z = 0;
+		z_disable();
 	#endif
 }
 
@@ -232,6 +238,7 @@ void home_z_positive() {
 		uint8_t	denoise_count = 0;
 
 		// home Z
+		z_enable();
 		// hit home hard
 		z_direction(1);
 		while (denoise_count < 8) {
@@ -245,7 +252,7 @@ void home_z_positive() {
 			delay(5);
 			unstep();
 			// wait until next step time
-			delay((uint32_t) (60.0 * ((float) F_CPU) / STEPS_PER_MM_Z / ((float) MAXIMUM_FEEDRATE_Z)));
+			delay((uint32_t) (60.0 * 1000000.0 / STEPS_PER_MM_Z / ((float) MAXIMUM_FEEDRATE_Z)));
 		}
 		denoise_count = 0;
 

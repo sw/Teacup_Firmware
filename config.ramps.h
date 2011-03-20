@@ -1,5 +1,4 @@
-#ifndef	_CONFIG_H
-#define	_CONFIG_H
+/* Notice to developers: this file is intentionally included twice. */
 
 /*
 	CONTENTS
@@ -163,6 +162,12 @@ undefine if you don't want to use them
 #include	"arduino.h"
 
 /*
+	internal pullup resistors
+		the ATmega has internal pullup resistors on it's input pins which are counterproductive with the commonly used eletronic endstops, so they should be switched off. For other endstops, like mechanical ones, you may want to uncomment this.
+*/
+//#define USE_INTERNAL_PULLUPS
+
+/*
 	this is the ramps motherboard pinout
 */
 
@@ -174,22 +179,35 @@ undefine if you don't want to use them
 #define	X_MIN_PIN							DIO3
 #define	X_MAX_PIN							DIO2
 #define	X_ENABLE_PIN					DIO24
+//#define	X_INVERT_DIR
+//#define	X_INVERT_MIN
+//#define	X_INVERT_MAX
+//#define	X_INVERT_ENABLE
 
 #define	Y_STEP_PIN						DIO38
 #define	Y_DIR_PIN							DIO40
 #define	Y_MIN_PIN							DIO16
 #define	Y_MAX_PIN							DIO17
 #define	Y_ENABLE_PIN					DIO36
+//#define	Y_INVERT_DIR
+//#define	Y_INVERT_MIN
+//#define	Y_INVERT_MAX
+//#define	Y_INVERT_ENABLE
 
 #define	Z_STEP_PIN						DIO44
 #define	Z_DIR_PIN							DIO46
 #define	Z_MIN_PIN							DIO18
 #define	Z_MAX_PIN							DIO19
 #define	Z_ENABLE_PIN					DIO42
+//#define	Z_INVERT_DIR
+//#define	Z_INVERT_MIN
+//#define	Z_INVERT_MAX
+//#define	Z_INVERT_ENABLE
 
 #define	E_STEP_PIN						DIO32
 #define	E_DIR_PIN							DIO34
 #define E_ENABLE_PIN					DIO30
+//#define	E_INVERT_DIR
 
 //#define	SD_CARD_DETECT				DIO2
 //#define	SD_WRITE_PROTECT			DIO3
@@ -352,7 +370,7 @@ DEFINE_HEATER(fan,			PORTH, PINH6, OCR2B)
 
 /*
 	DC extruder
-		If you have a DC motor extruder, configure it as a "heater" above and define this value as the index or name
+		If you have a DC motor extruder, configure it as a "heater" above and define this value as the index or name. You probably also want to comment out E_STEP_PIN and E_DIR_PIN in the Pinouts section above
 */
 // #define	DC_EXTRUDER HEATER_motor
 // #define	DC_EXTRUDER_PWM	180
@@ -425,5 +443,3 @@ DEFINE_HEATER(fan,			PORTH, PINH6, OCR2B)
 * OCR5CL - PL5 - DIO44                                                      *
 *                                                                           *
 \***************************************************************************/
-
-#endif /* _CONFIG_H */

@@ -104,7 +104,9 @@ uint32_t approx_distance_3( uint32_t dx, uint32_t dy, uint32_t dz )
 uint16_t int_sqrt(uint32_t a) {
 	uint32_t rem = 0;
 	uint32_t root = 0;
-	for (uint16_t i = 0; i < 16; i++) {
+	uint16_t i;
+
+	for (i = 0; i < 16; i++) {
 		root <<= 1;
 		rem = ((rem << 2) + (a >> 30));
 		a <<= 2;
@@ -181,8 +183,7 @@ void dda_create(DDA *dda, TARGET *target) {
 		power_on();
 		x_enable();
 		y_enable();
-		if (dda->z_delta)
-			z_enable();
+		// Z is enabled in dda_start()
 		e_enable();
 
 		// since it's unusual to combine X, Y and Z changes in a single move on reprap, check if we can use simpler approximations before trying the full 3d approximation.
@@ -357,14 +358,10 @@ void dda_start(DDA *dda) {
 			#endif
 		}
 		else {*/
-		// ensure steppers are ready to go
+		// get ready to go
 		steptimeout = 0;
-		power_on();
-		x_enable();
-		y_enable();
 		if (dda->z_delta)
 			z_enable();
-		e_enable();
 
 		// set direction outputs
 		x_direction(dda->x_direction);
@@ -602,6 +599,8 @@ void dda_step(DDA *dda) {
 		#ifdef	DC_EXTRUDER
 			heater_set(DC_EXTRUDER, 0);
 		#endif
+		// z stepper is only enabled while moving
+		z_disable();
 	}
 	
 	setTimer(dda->c >> 8);
