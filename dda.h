@@ -5,21 +5,21 @@
 
 #include	"config.h"
 
+// Used in distance calculation during DDA setup
+/// micrometers per step X
+#define	UM_PER_STEP_X		1000L / ((uint32_t) STEPS_PER_MM_X)
+/// micrometers per step Y
+#define	UM_PER_STEP_Y		1000L / ((uint32_t) STEPS_PER_MM_Y)
+/// micrometers per step Z
+#define	UM_PER_STEP_Z		1000L / ((uint32_t) STEPS_PER_MM_Z)
+/// micrometers per step E
+#define	UM_PER_STEP_E		1000L / ((uint32_t) STEPS_PER_MM_E)
+
 #ifdef ACCELERATION_REPRAP
 	#ifdef ACCELERATION_RAMPING
 		#error Cant use ACCELERATION_REPRAP and ACCELERATION_RAMPING together.
 	#endif
 #endif
-
-/*
-	enums
-*/
-// wether we accelerate, run at full speed, break down, etc.
-typedef enum {
-	RAMP_UP,
-	RAMP_MAX,
-	RAMP_DOWN
-} ramp_state_t;
 
 /*
 	types
@@ -34,69 +34,91 @@ typedef struct {
 	uint32_t					F;
 } TARGET;
 
-// this is a digital differential analyser data struct
+/**
+	\struct MOVE_STATE
+	\brief this struct is made for tracking the current state of the movement
+
+	Parts of this struct are initialised only once per reboot, so make sure dda_step() leaves them with a value compatible to begin a new movement at the end of the movement. Other parts are filled in by dda_start().
+*/
 typedef struct {
-	// this is where we should finish
+	// bresenham counters
+	int32_t						x_counter; ///< counter for total_steps vs this axis
+	int32_t						y_counter; ///< counter for total_steps vs this axis
+	int32_t						z_counter; ///< counter for total_steps vs this axis
+	int32_t						e_counter; ///< counter for total_steps vs this axis
+
+	// step counters
+	uint32_t					x_steps; ///< number of steps on X axis
+	uint32_t					y_steps; ///< number of steps on Y axis
+	uint32_t					z_steps; ///< number of steps on Z axis
+	uint32_t					e_steps; ///< number of steps on E axis
+
+	#ifdef ACCELERATION_RAMPING
+	/// counts actual steps done
+	uint32_t					step_no;
+	/// time until next step
+	uint32_t					c;
+	/// tracking variable
+	int16_t						n;
+	#endif
+} MOVE_STATE;
+
+/**
+	\struct DDA
+	\brief this is a digital differential analyser data struct
+
+	This struct holds all the details of an individual multi-axis move, including pre-calculated acceleration data.
+	This struct is filled in by dda_create(), called from enqueue(), called mostly from gcode_process() and from a few other places too (eg \file homing.c)
+*/
+typedef struct {
+	/// this is where we should finish
 	TARGET						endpoint;
 
 	union {
 		struct {
 			// status fields
-			uint8_t						nullmove			:1;
-			uint8_t						live					:1;
+			uint8_t						nullmove			:1; ///< bool: no axes move, maybe we wait for temperatures or change speed
+			uint8_t						live					:1; ///< bool: this DDA is running and still has steps to do
 			#ifdef ACCELERATION_REPRAP
-			uint8_t						accel					:1;
+			uint8_t						accel					:1; ///< bool: speed changes during this move, run accel code
 			#endif
 
 			// wait for temperature to stabilise flag
-			uint8_t						waitfor_temp	:1;
+			uint8_t						waitfor_temp	:1; ///< bool: wait for temperatures to reach their set values
 
 			// directions
-			uint8_t						x_direction		:1;
-			uint8_t						y_direction		:1;
-			uint8_t						z_direction		:1;
-			uint8_t						e_direction		:1;
+			uint8_t						x_direction		:1; ///< direction flag for X axis
+			uint8_t						y_direction		:1; ///< direction flag for Y axis
+			uint8_t						z_direction		:1; ///< direction flag for Z axis
+			uint8_t						e_direction		:1; ///< direction flag for E axis
 		};
-		uint8_t							allflags;	// used for clearing all flags
+		uint8_t							allflags;	///< used for clearing all flags
 	};
 
 	// distances
-	uint32_t					x_delta;
-	uint32_t					y_delta;
-	uint32_t					z_delta;
-	uint32_t					e_delta;
+	uint32_t					x_delta; ///< number of steps on X axis
+	uint32_t					y_delta; ///< number of steps on Y axis
+	uint32_t					z_delta; ///< number of steps on Z axis
+	uint32_t					e_delta; ///< number of steps on E axis
 
-	// bresenham counters
-	int32_t						x_counter;
-	int32_t						y_counter;
-	int32_t						z_counter;
-	int32_t						e_counter;
-
-	// total number of steps: set to max(x_delta, y_delta, z_delta, e_delta)
+	/// total number of steps: set to \f$\max(\Delta x, \Delta y, \Delta z, \Delta e)\f$
 	uint32_t					total_steps;
 
 	// linear acceleration variables: c and end_c are 24.8 fixed point timer values, n is the tracking variable
-	uint32_t					c;
+	#ifndef ACCELERATION_RAMPING
+	uint32_t					c; ///< time until next step
+	#endif
 	#ifdef ACCELERATION_REPRAP
-	uint32_t					end_c;
-	int32_t						n;
+	uint32_t					end_c; ///< time between 2nd last step and last step
+	int32_t						n; ///< precalculated step time offset variable. At every step we calculate \f$c = c - (2 c / n)\f$; \f$n+=4\f$. See http://www.embedded.com/columns/technicalinsights/56800129?printable=true for full description
 	#endif
 	#ifdef ACCELERATION_RAMPING
-	// start of down-ramp, intitalized with total_steps / 2
-	uint32_t					ramp_steps;
-	// counts actual steps done
-	uint32_t					step_no;
-	// 24.8 fixed point timer value, maximum speed
+	/// number of steps accelerating
+	uint32_t					rampup_steps;
+	/// number of last step before decelerating
+	uint32_t					rampdown_steps;
+	/// 24.8 fixed point timer value, maximum speed
 	uint32_t					c_min;
-	// tracking variable
-	int32_t						n;
-	ramp_state_t			ramp_state;
-	#endif
-	#ifdef ACCELERATION_TEMPORAL
-	uint32_t					x_step_interval;
-	uint32_t					y_step_interval;
-	uint32_t					z_step_interval;
-	uint32_t					e_step_interval;
 	#endif
 } DDA;
 
@@ -104,14 +126,14 @@ typedef struct {
 	variables
 */
 
-// steptimeout is set to zero when we step, and increases over time so we can turn the motors off when they've been idle for a while
-extern uint8_t steptimeout;
+/// steptimeout is set to zero when we step, and increases over time so we can turn the motors off when they've been idle for a while
+/// It is also used inside and outside of interrupts, which is why it has been made volatile
+extern volatile uint8_t steptimeout;
 
-// startpoint holds the endpoint of the most recently created DDA, so we know where the next one created starts
-// could also be called last_endpoint
+/// startpoint holds the endpoint of the most recently created DDA, so we know where the next one created starts. could also be called last_endpoint
 extern TARGET startpoint;
 
-// current_position holds the machine's current position. this is only updated when we step, or when G92 (set home) is received.
+/// current_position holds the machine's current position. this is only updated when we step, or when G92 (set home) is received.
 extern TARGET current_position;
 
 /*
@@ -124,6 +146,9 @@ uint32_t approx_distance_3( uint32_t dx, uint32_t dy, uint32_t dz )	__attribute_
 // const because return value is always the same given the same v
 const uint8_t	msbloc (uint32_t v)																		__attribute__ ((const));
 
+// initialize dda structures
+void dda_init(void);
+
 // create a DDA
 void dda_create(DDA *dda, TARGET *target);
 
@@ -132,5 +157,8 @@ void dda_start(DDA *dda)																						__attribute__ ((hot));
 
 // DDA takes one step (called from timer interrupt)
 void dda_step(DDA *dda)																							__attribute__ ((hot));
+
+// update current_position
+void update_position(void);
 
 #endif	/* _DDA_H */

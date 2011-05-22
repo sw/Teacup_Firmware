@@ -1,33 +1,39 @@
 #include	"home.h"
 
+/** \file
+	\brief Homing routines
+*/
+
 #include	"dda.h"
 #include	"dda_queue.h"
 #include	"delay.h"
 #include	"pinio.h"
 
+/// home all 3 axes
 void home() {
-	queue_wait();
-
 	#if defined	X_MIN_PIN
 		home_x_negative();
 	#elif defined X_MAX_PIN
 		home_x_positive();
 	#endif
-	
+
 	#if defined	Y_MIN_PIN
 		home_y_negative();
 	#elif defined Y_MAX_PIN
 		home_y_positive();
 	#endif
-	
-	#if defined	Z_MIN_PIN
-		home_z_negative();
-	#elif defined Z_MAX_PIN
+
+	#if defined Z_MAX_PIN
 		home_z_positive();
+	#elif defined	Z_MIN_PIN
+		home_z_negative();
 	#endif
 }
 
+/// find X MIN endstop
 void home_x_negative() {
+	queue_wait();
+
 	#if defined X_MIN_PIN
 		uint8_t	denoise_count = 0;
 
@@ -65,8 +71,11 @@ void home_x_negative() {
 		startpoint.X = current_position.X = 0;
 	#endif
 }
-	
+
+/// find X_MAX endstop
 void home_x_positive() {
+	queue_wait();
+
 	#if defined X_MAX_PIN
 		uint8_t	denoise_count = 0;
 
@@ -109,8 +118,11 @@ void home_x_positive() {
 		enqueue(&t);
 	#endif
 }
-		
+
+/// fund Y MIN endstop
 void home_y_negative() {
+	queue_wait();
+
 	#if defined Y_MIN_PIN
 		uint8_t	denoise_count = 0;
 
@@ -149,7 +161,10 @@ void home_y_negative() {
 	#endif
 }
 
+/// find Y MAX endstop
 void home_y_positive() {
+	queue_wait();
+
 	#if defined Y_MAX_PIN
 		uint8_t	denoise_count = 0;
 
@@ -193,7 +208,10 @@ void home_y_positive() {
 	#endif
 }
 
+/// find Z MIN endstop
 void home_z_negative() {
+	queue_wait();
+
 	#if defined Z_MIN_PIN
 		uint8_t	denoise_count = 0;
 
@@ -233,7 +251,10 @@ void home_z_negative() {
 	#endif
 }
 
+/// find Z MAX endstop
 void home_z_positive() {
+	queue_wait();
+
 	#if defined Z_MAX_PIN
 		uint8_t	denoise_count = 0;
 

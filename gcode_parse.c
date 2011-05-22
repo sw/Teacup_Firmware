@@ -1,5 +1,9 @@
 #include	"gcode_parse.h"
 
+/** \file
+	\brief Parse received G-Codes
+*/
+
 #include	<string.h>
 
 #include	"serial.h"
@@ -39,12 +43,17 @@
 #define	STEPS_PER_IN_Z		((uint32_t) ((25.4 * STEPS_PER_MM_Z) + 0.5))
 #define	STEPS_PER_IN_E		((uint32_t) ((25.4 * STEPS_PER_MM_E) + 0.5))
 
+/// current or previous gcode word
+/// for working out what to do with data just received
 uint8_t last_field = 0;
 
+/// crude crc macro
 #define crc(a, b)		(a ^ b)
 
+/// crude floating point data storage
 decfloat read_digit					__attribute__ ((__section__ (".bss")));
 
+/// this is where we store all the data for the current command before we work out what to do with it
 GCODE_COMMAND next_target		__attribute__ ((__section__ (".bss")));
 
 /*
@@ -71,39 +80,40 @@ GCODE_COMMAND next_target		__attribute__ ((__section__ (".bss")));
 	utility functions
 */
 extern const uint32_t powers[];  // defined in sermsg.c
-const int32_t rounding[DECFLOAT_EXP_MAX] = {0,  5,  50,  500};
 
-static int32_t decfloat_to_int(decfloat *df, uint32_t multiplicand, uint32_t denominator) {
+/// convert a floating point input value into an integer with appropriate scaling.
+/// \param *df pointer to floating point structure that holds fp value to convert
+/// \param multiplicand multiply by this amount during conversion to integer
+/// \param divide_by_1000 divide by 1000 during conversion to integer
+///
+/// lots of work has been done in exploring this function's limitations in terms of overflow and rounding
+/// this work may not be finished
+static int32_t decfloat_to_int(decfloat *df, uint32_t multiplicand, uint8_t divide_by_1000) {
 	uint32_t	r = df->mantissa;
 	uint8_t	e = df->exponent;
+	uint32_t	rnew1, rnew2;
 
 	// e=1 means we've seen a decimal point but no digits after it, and e=2 means we've seen a decimal point with one digit so it's too high by one if not zero
 	if (e)
 		e--;
 
-	uint32_t	rnew1 = r * (multiplicand / denominator);
-	if (e)
-	{
-		uint32_t	rnew2 = r * (multiplicand % denominator) / denominator;
+	if (divide_by_1000) {
+		rnew1 = r * (multiplicand / 1000);
+		rnew2 = (r * (multiplicand % 1000) + (1000 / 2)) / 1000;
 		r = rnew1 + rnew2;
+	}
+	else {
+		r *= multiplicand;
+	}
 
-		r = (r + rounding[e]) / powers[e];
-	}
-	else
-	{
-		uint32_t	rnew2 = (r * (multiplicand % denominator) + (denominator / 2)) / denominator;
-		r = rnew1 + rnew2;
-	}
+	if (e)
+		r = (r + powers[e] / 2) / powers[e];
 
 	return df->sign ? -(int32_t)r : (int32_t)r;
 }
 
-/****************************************************************************
-*                                                                           *
-* Character Received - add it to our command                                *
-*                                                                           *
-****************************************************************************/
-
+/// Character Received - add it to our command
+/// \param c the next character to process
 void gcode_parse_char(uint8_t c) {
 	// uppercase
 	if (c >= 'a' && c <= 'z')
@@ -117,53 +127,53 @@ void gcode_parse_char(uint8_t c) {
 			switch (last_field) {
 				case 'G':
 					next_target.G = read_digit.mantissa;
-					if (debug_flags & DEBUG_ECHO)
+					if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 						serwrite_uint8(next_target.G);
 					break;
 				case 'M':
 					next_target.M = read_digit.mantissa;
-					if (debug_flags & DEBUG_ECHO)
+					if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 						serwrite_uint8(next_target.M);
 					break;
 				case 'X':
 					if (next_target.option_inches)
-						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_IN_X, 1);
+						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_IN_X, 0);
 					else
-						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_M_X, 1000);
-					if (debug_flags & DEBUG_ECHO)
+						next_target.target.X = decfloat_to_int(&read_digit, STEPS_PER_M_X, 1);
+					if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 						serwrite_int32(next_target.target.X);
 					break;
 				case 'Y':
 					if (next_target.option_inches)
-						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_IN_Y, 1);
+						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_IN_Y, 0);
 					else
-						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_M_Y, 1000);
-					if (debug_flags & DEBUG_ECHO)
+						next_target.target.Y = decfloat_to_int(&read_digit, STEPS_PER_M_Y, 1);
+					if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 						serwrite_int32(next_target.target.Y);
 					break;
 				case 'Z':
 					if (next_target.option_inches)
-						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_IN_Z, 1);
+						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_IN_Z, 0);
 					else
-						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_M_Z, 1000);
-					if (debug_flags & DEBUG_ECHO)
+						next_target.target.Z = decfloat_to_int(&read_digit, STEPS_PER_M_Z, 1);
+					if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 						serwrite_int32(next_target.target.Z);
 					break;
 				case 'E':
 					if (next_target.option_inches)
-						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_IN_E, 1);
+						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_IN_E, 0);
 					else
-						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_M_E, 1000);
-					if (debug_flags & DEBUG_ECHO)
+						next_target.target.E = decfloat_to_int(&read_digit, STEPS_PER_M_E, 1);
+					if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 						serwrite_uint32(next_target.target.E);
 					break;
 				case 'F':
 					// just use raw integer, we need move distance and n_steps to convert it to a useful value, so wait until we have those to convert it
 					if (next_target.option_inches)
-						next_target.target.F = decfloat_to_int(&read_digit, 254, 10);
+						next_target.target.F = decfloat_to_int(&read_digit, 25400, 1);
 					else
-						next_target.target.F = decfloat_to_int(&read_digit, 1, 1);
-					if (debug_flags & DEBUG_ECHO)
+						next_target.target.F = decfloat_to_int(&read_digit, 1, 0);
+					if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 						serwrite_uint32(next_target.target.F);
 					break;
 				case 'S':
@@ -171,33 +181,33 @@ void gcode_parse_char(uint8_t c) {
 					// cosmetically this should be done in the temperature section,
 					// but it takes less code, less memory and loses no precision if we do it here instead
 					if ((next_target.M == 104) || (next_target.M == 109) || (next_target.M == 140))
-						next_target.S = decfloat_to_int(&read_digit, 4, 1);
+						next_target.S = decfloat_to_int(&read_digit, 4, 0);
 					// if this is heater PID stuff, multiply by PID_SCALE because we divide by PID_SCALE later on
 					else if ((next_target.M >= 130) && (next_target.M <= 132))
-						next_target.S = decfloat_to_int(&read_digit, PID_SCALE, 1);
+						next_target.S = decfloat_to_int(&read_digit, PID_SCALE, 0);
 					else
-						next_target.S = decfloat_to_int(&read_digit, 1, 1);
-					if (debug_flags & DEBUG_ECHO)
+						next_target.S = decfloat_to_int(&read_digit, 1, 0);
+					if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 						serwrite_uint16(next_target.S);
 					break;
 				case 'P':
-					next_target.P = decfloat_to_int(&read_digit, 1, 1);
-					if (debug_flags & DEBUG_ECHO)
+					next_target.P = decfloat_to_int(&read_digit, 1, 0);
+					if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 						serwrite_uint16(next_target.P);
 					break;
 				case 'T':
 					next_target.T = read_digit.mantissa;
-					if (debug_flags & DEBUG_ECHO)
+					if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 						serwrite_uint8(next_target.T);
 					break;
 				case 'N':
-					next_target.N = decfloat_to_int(&read_digit, 1, 1);
-					if (debug_flags & DEBUG_ECHO)
+					next_target.N = decfloat_to_int(&read_digit, 1, 0);
+					if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 						serwrite_uint32(next_target.N);
 					break;
 				case '*':
-					next_target.checksum_read = decfloat_to_int(&read_digit, 1, 1);
-					if (debug_flags & DEBUG_ECHO)
+					next_target.checksum_read = decfloat_to_int(&read_digit, 1, 0);
+					if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 						serwrite_uint8(next_target.checksum_read);
 					break;
 			}
@@ -212,7 +222,7 @@ void gcode_parse_char(uint8_t c) {
 		// new field?
 		if ((c >= 'A' && c <= 'Z') || c == '*') {
 			last_field = c;
-			if (debug_flags & DEBUG_ECHO)
+			if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 				serial_writechar(c);
 		}
 
@@ -321,7 +331,7 @@ void gcode_parse_char(uint8_t c) {
 
 	// end of line
 	if ((c == 10) || (c == 13)) {
-		if (debug_flags & DEBUG_ECHO)
+		if (DEBUG_ECHO && (debug_flags & DEBUG_ECHO))
 			serial_writechar(c);
 
 		if (
@@ -342,7 +352,7 @@ void gcode_parse_char(uint8_t c) {
 				// process
 				serial_writestr_P(PSTR("ok "));
 				process_gcode_command();
-				serial_writestr_P(PSTR("\n"));
+				serial_writechar('\n');
 
 				// expect next line number
 				if (next_target.seen_N == 1)
@@ -350,12 +360,12 @@ void gcode_parse_char(uint8_t c) {
 			}
 			else {
 				sersendf_P(PSTR("rs N%ld Expected checksum %d\n"), next_target.N_expected, next_target.checksum_calculated);
-				request_resend();
+// 				request_resend();
 			}
 		}
 		else {
 			sersendf_P(PSTR("rs N%ld Expected line number %ld\n"), next_target.N_expected, next_target.N_expected);
-			request_resend();
+// 			request_resend();
 		}
 
 		// reset variables
@@ -373,9 +383,14 @@ void gcode_parse_char(uint8_t c) {
 
 		if (next_target.option_relative) {
 			next_target.target.X = next_target.target.Y = next_target.target.Z = 0;
+			#ifdef	E_ABSOLUTE
+				next_target.target.E = 0;
+			#endif
 		}
-		// E always relative
-		next_target.target.E = 0;
+		#ifndef	E_ABSOLUTE
+			// E always relative
+			next_target.target.E = 0;
+		#endif
 	}
 }
 

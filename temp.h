@@ -13,8 +13,7 @@ we still need to specify which analog pins we use in machine.h for the analog se
 */
 
 #undef DEFINE_TEMP_SENSOR
-#undef _CONFIG_H
-#define DEFINE_TEMP_SENSOR(name, type, pin) TEMP_SENSOR_ ## name,
+#define DEFINE_TEMP_SENSOR(name, type, pin, additional) TEMP_SENSOR_ ## name,
 typedef enum {
 	#include "config.h"
 	NUM_TEMP_SENSORS,

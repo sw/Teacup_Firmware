@@ -2,7 +2,7 @@
 #                                                                            #
 # Teacup - alternative firmware for repraps                                  #
 #                                                                            #
-# by Triffid Hunter, Traumflug, jakepoz                                      #
+# by Triffid Hunter, Traumflug, jakepoz, Markus Hitter, many others          #
 #                                                                            #
 #                                                                            #
 # This firmware is Copyright (C) 2009-2010 Michael Moon aka Triffid_Hunter   #
@@ -43,32 +43,6 @@ DEFS = -DF_CPU=$(F_CPU)
 
 ##############################################################################
 #                                                                            #
-# Available Defines:                                                         #
-#                                                                            #
-# DEBUG                                                                      #
-#   enables tons of debugging output. may cause host-side talkers to choke   #
-# XONXOFF                                                                    #
-#   enables XON/XOFF flow control for stupid or crude talkers                #
-# ACCELERATION_REPRAP                                                        #
-#   enables reprap-style acceleration                                        #
-# ACCELERATION_RAMPING                                                       #
-#   enables start/stop ramping                                               #
-# ACCELERATION_TEMPORAL                                                      #
-#   enables experimental temporal step algorithm - not technically a type of #
-#   acceleration, but since it controls step timing it seems appropriate     #
-# GEN3                                                                       #
-#   build for standard reprap electronics instead of your custom rig         #
-# HOST                                                                       #
-#   this is the motherboard for GEN3- don't touch! Extruder has its own      #
-#   Makefile.                                                                #
-#                                                                            #
-##############################################################################
-
-# DEFS = -DF_CPU=$(F_CPU) -DHOST -DGEN3
-# DEFS += "-DDEBUG=1"
-
-##############################################################################
-#                                                                            #
 # Programmer settings for "make program"                                     #
 #                                                                            #
 ##############################################################################
@@ -86,16 +60,17 @@ AVRDUDECONF = /etc/avrdude.conf
 ##############################################################################
 
 PROGPORT = /dev/arduino
+# PROGPORT = /dev/ttyUSB0
 
 # atmega168
 #PROGBAUD = 19200
 # atmega328p, 644p, 1280
 PROGBAUD = 57600
-# atmega 2560 
-#PROGBAUD = 115200
+# atmega 2560
+# PROGBAUD = 115200
 
 # at least mega2560 needs stk500v2
-PROGID = stk500v1
+PROGID = arduino
 
 ##############################################################################
 #                                                                            #
@@ -105,7 +80,7 @@ PROGID = stk500v1
 
 PROGRAM = mendel
 
-SOURCES = $(PROGRAM).c dda.c gcode_parse.c gcode_process.c timer.c temp.c sermsg.c dda_queue.c watchdog.c debug.c sersendf.c heater.c analog.c delay.c intercom.c pinio.c clock.c home.c crc.c
+SOURCES = $(PROGRAM).c dda.c gcode_parse.c gcode_process.c timer.c temp.c sermsg.c dda_queue.c watchdog.c debug.c sersendf.c heater.c analog.c intercom.c pinio.c clock.c home.c crc.c delay.c
 
 ARCH = avr-
 CC = $(ARCH)gcc
@@ -131,7 +106,7 @@ endif
 
 OBJ = $(patsubst %.c,%.o,${SOURCES})
 
-.PHONY: all program clean size subdirs
+.PHONY: all program clean size subdirs program-fuses doc functionsbysize
 .PRECIOUS: %.o %.elf
 
 all: config.h subdirs $(PROGRAM).hex $(PROGRAM).lst $(PROGRAM).sym size
@@ -177,6 +152,12 @@ config.h: config.h.dist
 	@echo
 	@diff -bBEuF '^. [[:digit:]]. [[:upper:]]' config.h config.h.dist
 	@false
+
+doc: Doxyfile *.c *.h
+	doxygen $<
+
+functionsbysize: $(OBJ)
+	@avr-objdump -h $^ | grep '\.text\.' | perl -ne '/\.text\.(\S+)\s+([0-9a-f]+)/ && printf "%u\t%s\n", eval("0x$$2"), $$1;' | sort -n
 
 %.o: %.c config.h Makefile
 	@echo "  CC        $@"
